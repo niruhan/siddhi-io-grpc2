@@ -61,7 +61,7 @@ import java.util.Map;
 
 // for more information refer https://siddhi-io.github.io/siddhi/documentation/siddhi-4.x/query-guide-4.x/#sink
 
-public class GrpcSink extends Sink {
+public class GRPCSink extends Sink {
 
     /**
      * Returns the list of classes which this sink can consume.

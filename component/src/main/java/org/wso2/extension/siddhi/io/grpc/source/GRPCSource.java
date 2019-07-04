@@ -81,7 +81,7 @@ import java.util.Map;
         }
 )
 // for more information refer https://siddhi-io.github.io/siddhi/documentation/siddhi-4.x/query-guide-4.x/#source
-public class GrpcSource extends Source {
+public class GRPCSource extends Source {
 
     /**
      * The initialization method for {@link Source}, will be called before other methods. It used to validate

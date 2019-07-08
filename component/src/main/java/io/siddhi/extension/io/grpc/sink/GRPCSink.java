@@ -34,10 +34,12 @@ import io.siddhi.core.util.transport.OptionHolder;
 import io.siddhi.extension.io.grpc.InvokeSequenceGrpc;
 import io.siddhi.extension.io.grpc.InvokeSequenceGrpc.InvokeSequenceBlockingStub;
 import io.siddhi.extension.io.grpc.InvokeSequenceGrpc.InvokeSequenceStub;
+import io.siddhi.extension.io.grpc.SequenceCallRequest;
+import io.siddhi.extension.io.grpc.SequenceCallResponse;
+import io.siddhi.extension.io.grpc.util.GRPCStubHolder;
 import io.siddhi.query.api.definition.StreamDefinition;
 import org.apache.log4j.Logger;
 
-import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
@@ -121,6 +123,8 @@ public class GRPCSink extends Sink {
         channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext().build();
         blockingStub = InvokeSequenceGrpc.newBlockingStub(channel);
         asyncStub = InvokeSequenceGrpc.newStub(channel);
+        GRPCStubHolder.getInstance().setBlockingStub(blockingStub);
+        GRPCStubHolder.getInstance().setAsyncStub(asyncStub);
         return null;
     }
 
@@ -128,7 +132,14 @@ public class GRPCSink extends Sink {
     public void publish(Object payload, DynamicOptions dynamicOptions, State state) throws ConnectionUnavailableException {
         String payloadAsJSON = generateJSONStringFromObjectPayload(payload);
         String sequenceName = "";
-        Map<String, String>
+        SequenceCallRequest.Builder requestBuilder = SequenceCallRequest.newBuilder();
+//        Map<String, String> synapseConfigs = requestBuilder.getSynapseConfigsMap();
+        requestBuilder.putSynapseConfigs("", "");
+        requestBuilder.setPayloadAsJSON(payloadAsJSON);
+        requestBuilder.setSequenceName(sequenceName);
+        SequenceCallRequest sequenceCallRequest = requestBuilder.build();
+
+        SequenceCallResponse response = blockingStub.callSequenceWithResponse(sequenceCallRequest); //todo: have to pass this request smhow to grpc source
 
     }
 
@@ -172,5 +183,6 @@ public class GRPCSink extends Sink {
         } catch (InterruptedException e) {
             throw new SiddhiAppRuntimeException(siddhiAppContext.getName() + ": " + e.getMessage());
         }
+        super.shutdown();
     }
 }

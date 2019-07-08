@@ -32,7 +32,7 @@ service InvokeSequence {
 
 message SequenceCallRequest {
     string sequenceName = 1;
-    string payloadAsJSON = 2;
+    string payloadAsJSON = 2; //json or xml
     map<string, string> synapseConfigs = 3;
 }
 

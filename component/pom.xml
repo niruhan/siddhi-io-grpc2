@@ -66,6 +66,16 @@
             <artifactId>siddhi-annotations</artifactId>
             <!--<version>5.0.0-SNAPS</version>-->
         </dependency>
+        <!--<dependency>-->
+            <!--<groupId>io.netty.wso2</groupId>-->
+            <!--<artifactId>netty-all</artifactId>-->
+            <!--<version>4.0.23.wso2v1</version>-->
+        <!--</dependency>-->
+        <dependency>
+            <groupId>org.wso2.transport.http</groupId>
+            <artifactId>org.wso2.transport.http.netty</artifactId>
+            <version>${transport.http.version}</version>
+        </dependency>
     </dependencies>
 
     <profiles>

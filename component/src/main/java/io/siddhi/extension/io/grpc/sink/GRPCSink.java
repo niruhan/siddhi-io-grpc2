@@ -37,6 +37,7 @@ import io.siddhi.extension.io.grpc.InvokeSequenceGrpc.InvokeSequenceStub;
 import io.siddhi.extension.io.grpc.SequenceCallRequest;
 import io.siddhi.extension.io.grpc.SequenceCallResponse;
 import io.siddhi.extension.io.grpc.util.GRPCStubHolder;
+import io.siddhi.extension.io.grpc.util.GrpcBlockingStub;
 import io.siddhi.query.api.definition.StreamDefinition;
 import org.apache.log4j.Logger;
 
@@ -72,8 +73,8 @@ public class GRPCSink extends Sink {
     private static final Logger logger = Logger.getLogger(GRPCSink.class.getName());
 
     private ManagedChannel channel; //todo: make final
-    private InvokeSequenceBlockingStub blockingStub;
-    private InvokeSequenceStub asyncStub;
+    private GrpcBlockingStub blockingStub;
+//    private InvokeSequenceStub asyncStub;
     private SiddhiAppContext siddhiAppContext;
     private Random random = new Random();
 
@@ -121,7 +122,7 @@ public class GRPCSink extends Sink {
         String host = ""; //todo: get from somewhere
         int port = 0;
         channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext().build();
-        blockingStub = InvokeSequenceGrpc.newBlockingStub(channel);
+        blockingStub = GrpcBlockingStub..newBlockingStub(channel);
         asyncStub = InvokeSequenceGrpc.newStub(channel);
         GRPCStubHolder.getInstance().setBlockingStub(blockingStub);
         GRPCStubHolder.getInstance().setAsyncStub(asyncStub);

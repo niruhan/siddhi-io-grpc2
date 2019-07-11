@@ -133,6 +133,8 @@
         </plugins>
     </build>
     <properties>
+        <!--<netty.version>4.1.19.Final</netty.version>-->
+        <transport.http.version>6.0.294</transport.http.version>
         <mavan.findbugsplugin.exclude.file>findbugs-exclude.xml</mavan.findbugsplugin.exclude.file>
         <siddhi.version>5.0.0</siddhi.version>
         <siddhi.version.range>[5.0.0,6.0.0)</siddhi.version.range>

@@ -21,6 +21,7 @@ import com.google.protobuf.DescriptorProtos;
 import com.google.protobuf.Descriptors;
 import com.google.protobuf.WireFormat;
 import io.netty.handler.codec.http.HttpHeaders;
+import io.siddhi.query.api.definition.Attribute;
 import org.ballerinalang.jvm.BallerinaValues;
 import org.ballerinalang.jvm.types.BArrayType;
 import org.ballerinalang.jvm.types.BField;
@@ -35,7 +36,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.ballerinalang.net.grpc.builder.utils.BalGenerationUtils.toCamelCase;
+//import static org.ballerinalang.net.grpc.builder.utils.BalGenerationUtils.toCamelCase;
 
 /**
  * Generic Proto3 Message.
@@ -89,16 +90,16 @@ public class Message {
 
     public Message(
             String messageName,
-            BType bType,
+            Attribute.Type siddhiAttributeType,
             com.google.protobuf.CodedInputStream input,
             Map<Integer, Descriptors.FieldDescriptor> fieldDescriptors)
             throws IOException {
         this(messageName);
         MapValue<String, Object> bMapValue = null;
         Map<String, BType> bMapFields = new HashMap<>();
-        if (bType instanceof BRecordType) {
-            bMapValue = BallerinaValues.createRecordValue(bType.getPackage().getName(), bType.getName());
-            for (BField messageField : ((BRecordType) bType).getFields().values()) {
+        if (siddhiAttributeType instanceof BRecordType) {
+            bMapValue = BallerinaValues.createRecordValue(siddhiAttributeType.getPackage().getName(), siddhiAttributeType.getName());
+            for (BField messageField : ((BRecordType) siddhiAttributeType).getFields().values()) {
                 bMapFields.put(messageField.getFieldName(), messageField.getFieldType());
             }
             bMessage = bMapValue;
@@ -121,7 +122,7 @@ public class Message {
                                 }
                                 floatArray.add(floatArray.size(), input.readDouble());
                             } else if (fieldDescriptor.getContainingOneof() != null) {
-                                updateBMapValue(bType, bMapValue, fieldDescriptor, input.readDouble());
+                                updateBMapValue(siddhiAttributeType, bMapValue, fieldDescriptor, input.readDouble());
                             } else {
                                 bMapValue.put(name, input.readDouble());
                             }
@@ -141,7 +142,7 @@ public class Message {
                                         Double.parseDouble(String.valueOf(input.readFloat())));
                             } else if (fieldDescriptor.getContainingOneof() != null) {
                                 double bValue = Double.parseDouble(String.valueOf(input.readFloat()));
-                                updateBMapValue(bType, bMapValue, fieldDescriptor, bValue);
+                                updateBMapValue(siddhiAttributeType, bMapValue, fieldDescriptor, bValue);
                             } else {
                                 bMapValue.put(name, Double.parseDouble(String.valueOf(input.readFloat())));
                             }
@@ -159,7 +160,7 @@ public class Message {
                                 }
                                 intArray.add(intArray.size(), input.readInt64());
                             } else if (fieldDescriptor.getContainingOneof() != null) {
-                                updateBMapValue(bType, bMapValue, fieldDescriptor, input.readInt64());
+                                updateBMapValue(siddhiAttributeType, bMapValue, fieldDescriptor, input.readInt64());
                             } else {
                                 bMapValue.put(name, input.readInt64());
                             }
@@ -177,7 +178,7 @@ public class Message {
                                 }
                                 intArray.add(intArray.size(), input.readUInt64());
                             } else if (fieldDescriptor.getContainingOneof() != null) {
-                                updateBMapValue(bType, bMapValue, fieldDescriptor, input.readUInt64());
+                                updateBMapValue(siddhiAttributeType, bMapValue, fieldDescriptor, input.readUInt64());
                             } else {
                                 bMapValue.put(name, input.readUInt64());
                             }
@@ -195,7 +196,7 @@ public class Message {
                                 }
                                 intArray.add(intArray.size(), input.readInt32());
                             } else if (fieldDescriptor.getContainingOneof() != null) {
-                                updateBMapValue(bType, bMapValue, fieldDescriptor, input.readInt32());
+                                updateBMapValue(siddhiAttributeType, bMapValue, fieldDescriptor, input.readInt32());
                             } else {
                                 bMapValue.put(name, input.readInt32());
                             }
@@ -213,7 +214,7 @@ public class Message {
                                 }
                                 intArray.add(intArray.size(), input.readFixed64());
                             } else if (fieldDescriptor.getContainingOneof() != null) {
-                                updateBMapValue(bType, bMapValue, fieldDescriptor, input.readFixed64());
+                                updateBMapValue(siddhiAttributeType, bMapValue, fieldDescriptor, input.readFixed64());
                             } else {
                                 bMapValue.put(name, input.readFixed64());
                             }
@@ -231,7 +232,7 @@ public class Message {
                                 }
                                 intArray.add(intArray.size(), input.readFixed32());
                             } else if (fieldDescriptor.getContainingOneof() != null) {
-                                updateBMapValue(bType, bMapValue, fieldDescriptor, input.readFixed32());
+                                updateBMapValue(siddhiAttributeType, bMapValue, fieldDescriptor, input.readFixed32());
                             } else {
                                 bMapValue.put(name, input.readFixed32());
                             }
@@ -249,7 +250,7 @@ public class Message {
                                 }
                                 booleanArray.add(booleanArray.size(), input.readBool() ? 1 : 0);
                             } else if (fieldDescriptor.getContainingOneof() != null) {
-                                updateBMapValue(bType, bMapValue, fieldDescriptor, input.readBool());
+                                updateBMapValue(siddhiAttributeType, bMapValue, fieldDescriptor, input.readBool());
                             } else {
                                 bMapValue.put(name, input.readBool());
                             }
@@ -268,7 +269,7 @@ public class Message {
                                 stringArray.add(stringArray.size(), input.readStringRequireUtf8());
                                 bMapValue.put(name, stringArray);
                             } else if (fieldDescriptor.getContainingOneof() != null) {
-                                updateBMapValue(bType, bMapValue, fieldDescriptor, input.readStringRequireUtf8());
+                                updateBMapValue(siddhiAttributeType, bMapValue, fieldDescriptor, input.readStringRequireUtf8());
                             } else {
                                 bMapValue.put(name, input.readStringRequireUtf8());
                             }
@@ -290,7 +291,7 @@ public class Message {
                             } else if (fieldDescriptor.getContainingOneof() != null) {
                                 Object bValue = fieldDescriptor.getEnumType().findValueByNumber(input
                                         .readEnum()).toString();
-                                updateBMapValue(bType, bMapValue, fieldDescriptor, bValue);
+                                updateBMapValue(siddhiAttributeType, bMapValue, fieldDescriptor, bValue);
                             } else {
                                 bMapValue.put(name, fieldDescriptor.getEnumType().findValueByNumber(input
                                         .readEnum()).toString());
@@ -304,7 +305,7 @@ public class Message {
                         if (bMapValue != null) {
                             if (fieldDescriptor.getContainingOneof() != null) {
                                 Object bValue = new ArrayValue(input.readByteArray());
-                                updateBMapValue(bType, bMapValue, fieldDescriptor, bValue);
+                                updateBMapValue(siddhiAttributeType, bMapValue, fieldDescriptor, bValue);
                             } else {
                                 bMapValue.put(name, new ArrayValue(input.readByteArray()));
                             }
@@ -328,8 +329,8 @@ public class Message {
                                         ((BArrayType) bMapFields.get(name)).getElementType(), input).bMessage);
                                 bMapValue.put(name, structArray);
                             } else if (fieldDescriptor.getContainingOneof() != null) {
-                                Object bValue = readMessage(fieldDescriptor, bType, input).bMessage;
-                                updateBMapValue(bType, bMapValue, fieldDescriptor, bValue);
+                                Object bValue = readMessage(fieldDescriptor, siddhiAttributeType, input).bMessage;
+                                updateBMapValue(siddhiAttributeType, bMapValue, fieldDescriptor, bValue);
                             } else {
                                 bMapValue.put(name, readMessage(fieldDescriptor, bMapFields.get(name), input).bMessage);
                             }

@@ -122,7 +122,7 @@ public class Message {
                     case DescriptorProtos.FieldDescriptorProto.Type.TYPE_STRING_VALUE: {
                         if (bMapValue != null) {
                             if (fieldDescriptor.isRepeated()) {
-                                List stringArray = new ArrayList(Type.STRING);
+                                List stringArray = new ArrayList(); //Type.STRING
                                 if (bMapValue.containsKey(name)) {
                                     stringArray = (ArrayValue) bMapValue.get(name);
                                 }
@@ -188,9 +188,9 @@ public class Message {
                     if (bMapValue != null && bMapValue.containsKey(fieldDescriptor.getName())) {
                         Object bValue = bMapValue.get(fieldDescriptor.getName());
                         if (bValue instanceof ArrayList) {
-                            ArrayValue valueArray = (ArrayValue) bValue;
+                            List valueArray = (List) bValue;
                             for (int i = 0; i < valueArray.size(); i++) {
-                                output.writeString(fieldDescriptor.getNumber(), valueArray.getString(i));
+                                output.writeString(fieldDescriptor.getNumber(), valueArray.get(i).toString());
                             }
                         } else {
                             output.writeString(fieldDescriptor.getNumber(), (String) bValue);

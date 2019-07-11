@@ -31,13 +31,9 @@ import io.siddhi.core.util.snapshot.state.State;
 import io.siddhi.core.util.snapshot.state.StateFactory;
 import io.siddhi.core.util.transport.DynamicOptions;
 import io.siddhi.core.util.transport.OptionHolder;
-import io.siddhi.extension.io.grpc.InvokeSequenceGrpc;
-import io.siddhi.extension.io.grpc.InvokeSequenceGrpc.InvokeSequenceBlockingStub;
-import io.siddhi.extension.io.grpc.InvokeSequenceGrpc.InvokeSequenceStub;
-import io.siddhi.extension.io.grpc.SequenceCallRequest;
-import io.siddhi.extension.io.grpc.SequenceCallResponse;
 import io.siddhi.extension.io.grpc.util.GRPCStubHolder;
 import io.siddhi.extension.io.grpc.util.GrpcBlockingStub;
+import io.siddhi.extension.io.grpc.util.Message;
 import io.siddhi.query.api.definition.StreamDefinition;
 import org.apache.log4j.Logger;
 
@@ -122,26 +118,25 @@ public class GRPCSink extends Sink {
         String host = ""; //todo: get from somewhere
         int port = 0;
         channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext().build();
-        blockingStub = GrpcBlockingStub..newBlockingStub(channel);
-        asyncStub = InvokeSequenceGrpc.newStub(channel);
+        blockingStub = new GrpcBlockingStub(channel);
         GRPCStubHolder.getInstance().setBlockingStub(blockingStub);
-        GRPCStubHolder.getInstance().setAsyncStub(asyncStub);
+//        GRPCStubHolder.getInstance().setAsyncStub(asyncStub);
         return null;
     }
 
     @Override
     public void publish(Object payload, DynamicOptions dynamicOptions, State state) throws ConnectionUnavailableException {
-        String payloadAsJSON = generateJSONStringFromObjectPayload(payload);
-        String sequenceName = "";
-        SequenceCallRequest.Builder requestBuilder = SequenceCallRequest.newBuilder();
-//        Map<String, String> synapseConfigs = requestBuilder.getSynapseConfigsMap();
-        requestBuilder.putSynapseConfigs("", "");
-        requestBuilder.setPayloadAsJSON(payloadAsJSON);
-        requestBuilder.setSequenceName(sequenceName);
-        SequenceCallRequest sequenceCallRequest = requestBuilder.build();
-
-        SequenceCallResponse response = blockingStub.callSequenceWithResponse(sequenceCallRequest); //todo: have to pass this request smhow to grpc source
-
+//        String payloadAsJSON = generateJSONStringFromObjectPayload(payload);
+//        String sequenceName = "";
+//        SequenceCallRequest.Builder requestBuilder = SequenceCallRequest.newBuilder();
+////        Map<String, String> synapseConfigs = requestBuilder.getSynapseConfigsMap();
+//        requestBuilder.putSynapseConfigs("", "");
+//        requestBuilder.setPayloadAsJSON(payloadAsJSON);
+//        requestBuilder.setSequenceName(sequenceName);
+//        SequenceCallRequest sequenceCallRequest = requestBuilder.build();
+//
+//        SequenceCallResponse response = blockingStub.callSequenceWithResponse(sequenceCallRequest); //todo: have to pass this request smhow to grpc source
+        Message response = blockingStub.executeUnary();
     }
 
     private String generateJSONStringFromObjectPayload(Object payload) {

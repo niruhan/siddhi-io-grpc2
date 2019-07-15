@@ -15,9 +15,18 @@ public class GRPCService {
 
     public static class Request {
         byte[] value;
+        public Request(byte[] value) {
+            this.value = value;
+        }
+
+        public byte[] getValue() {
+            return value;
+        }
     }
 
-    public class EmptyResponse{}
+    public class EmptyResponse{
+        byte[] response;
+    }
 
 //    static final MethodDescriptor<Request, EmptyResponse> CREATE_METHOD =
 //            MethodDescriptor.newBuilder(

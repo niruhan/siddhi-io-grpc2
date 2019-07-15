@@ -19,27 +19,27 @@ package io.siddhi.extension.io.grpc.util;
 
 public class GRPCStubHolder {
     private static GRPCStubHolder instance = new GRPCStubHolder();
-    private GrpcBlockingStub blockingStub;
-//    private InvokeSequenceStub asyncStub;
-
-    private GRPCStubHolder() {
-    }
-
-    public static GRPCStubHolder getInstance() {
-        return instance;
-    }
-
-    public void setBlockingStub(GrpcBlockingStub blockingStub) {
-        this.blockingStub = blockingStub;
-    }
-
-//    public void setAsyncStub(InvokeSequenceStub asyncStub) {
-//        this.asyncStub = asyncStub;
+//    private GrpcBlockingStub blockingStub;
+////    private InvokeSequenceStub asyncStub;
+//
+//    private GRPCStubHolder() {
 //    }
-
-    public GrpcBlockingStub getBlockingStub() {
-        return blockingStub;
-    }
+//
+//    public static GRPCStubHolder getInstance() {
+//        return instance;
+//    }
+//
+//    public void setBlockingStub(GrpcBlockingStub blockingStub) {
+//        this.blockingStub = blockingStub;
+//    }
+//
+////    public void setAsyncStub(InvokeSequenceStub asyncStub) {
+////        this.asyncStub = asyncStub;
+////    }
+//
+//    public GrpcBlockingStub getBlockingStub() {
+//        return blockingStub;
+//    }
 
 //    public InvokeSequenceStub getAsyncStub() {
 //        return asyncStub;

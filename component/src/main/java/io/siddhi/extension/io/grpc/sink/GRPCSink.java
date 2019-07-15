@@ -26,6 +26,7 @@ import io.grpc.stub.ClientCalls;
 import io.siddhi.annotation.Example;
 import io.siddhi.annotation.Extension;
 import io.siddhi.core.config.SiddhiAppContext;
+import io.siddhi.core.event.Event;
 import io.siddhi.core.exception.ConnectionUnavailableException;
 import io.siddhi.core.exception.SiddhiAppRuntimeException;
 import io.siddhi.core.stream.ServiceDeploymentInfo;
@@ -44,6 +45,7 @@ import org.apache.log4j.Logger;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.util.Random;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -77,8 +79,9 @@ public class GRPCSink extends Sink {
 //    private InvokeSequenceStub asyncStub;
     private SiddhiAppContext siddhiAppContext;
     private Random random = new Random();
-    private Channel channel;
-    private String serviceName;
+    private ManagedChannel channel;
+    private static String serviceName  = "TestService";
+//    private final Semaphore limiter = new Semaphore(100);
 
     /**
      * Returns the list of classes which this sink can consume.
@@ -89,7 +92,7 @@ public class GRPCSink extends Sink {
      */
     @Override
     public Class[] getSupportedInputEventClasses() {
-            return new Class[0];
+            return new Class[]{Event.class};
     }
 
     @Override
@@ -121,9 +124,10 @@ public class GRPCSink extends Sink {
     protected StateFactory init(StreamDefinition streamDefinition, OptionHolder optionHolder, ConfigReader configReader,
                                 SiddhiAppContext siddhiAppContext) {
         this.siddhiAppContext = siddhiAppContext;
-        this.serviceName = ""; //todo: get from options holder
+//        this.serviceName = "TestService"; //todo: get from options holder
+        String port = optionHolder.validateAndGetOption("port").getValue();
 
-        channel = ManagedChannelBuilder.forTarget("dns:///localhost:" + 8000)
+        channel = ManagedChannelBuilder.forTarget("dns:///localhost:" + port)
                 .usePlaintext(true)
                 .build();
 
@@ -135,10 +139,13 @@ public class GRPCSink extends Sink {
 
     @Override
     public void publish(Object payload, DynamicOptions dynamicOptions, State state) throws ConnectionUnavailableException {
+
         ClientCall<Request, EmptyResponse> call = channel.newCall(CREATE_METHOD, CallOptions.DEFAULT);
-        Request request = new Request();
+        byte[] myvar = "Any String you want".getBytes();
+        Request request = new Request(myvar);
+
         ListenableFuture<EmptyResponse> res = ClientCalls.futureUnaryCall(call, request);
-        res.addListener(() ->  { }, MoreExecutors.directExecutor());
+//        res.addListener(, MoreExecutors.directExecutor());
 
         Futures.addCallback(res, new FutureCallback<EmptyResponse>() {
             @Override
@@ -149,11 +156,12 @@ public class GRPCSink extends Sink {
             @Override
             public void onFailure(Throwable t) {
                 System.out.println("Failure");
+                throw new SiddhiAppRuntimeException(t.getMessage());
             }
         });
     }
 
-    MethodDescriptor<Request, EmptyResponse> CREATE_METHOD =
+    public static MethodDescriptor<Request, EmptyResponse> CREATE_METHOD =
             MethodDescriptor.newBuilder(
                     marshallerFor(Request.class),
                     marshallerFor(EmptyResponse.class))
@@ -163,16 +171,20 @@ public class GRPCSink extends Sink {
                     .setSampledToLocalTracing(true)
                     .build();
 
-    <T> MethodDescriptor.Marshaller<T> marshallerFor(Class<T> clz) {
+    static <T> MethodDescriptor.Marshaller<T> marshallerFor(Class<T> clz) {
         return new MethodDescriptor.Marshaller<T>() {
             @Override
             public InputStream stream(T value) {
-                return new ByteArrayInputStream((byte[]) value);
+                return new ByteArrayInputStream(((Request) value).getValue());
             }
 
             @Override
             public T parse(InputStream stream) {
-                return null; //gson.fromJson(new InputStreamReader(stream, StandardCharsets.UTF_8), clz);
+                System.out.println("received");
+//                stream.;
+                byte[] myvar = "Any String you want".getBytes();
+                Request request = new Request(myvar);
+                return (T) request; //gson.fromJson(new InputStreamReader(stream, StandardCharsets.UTF_8), clz);
                 //todo: find way to get byte[] from inputstream
             }
         };

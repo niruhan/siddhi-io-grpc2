@@ -17,8 +17,6 @@
  */
 package io.siddhi.extension.io.grpc.util;
 
-import io.siddhi.extension.io.grpc.util.GrpcBlockingStub;
-
 public class GRPCStubHolder {
     private static GRPCStubHolder instance = new GRPCStubHolder();
     private GrpcBlockingStub blockingStub;

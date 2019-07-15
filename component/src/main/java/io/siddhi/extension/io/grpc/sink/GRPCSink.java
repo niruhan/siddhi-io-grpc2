@@ -36,19 +36,15 @@ import io.siddhi.core.util.snapshot.state.StateFactory;
 import io.siddhi.core.util.transport.DynamicOptions;
 import io.siddhi.core.util.transport.OptionHolder;
 import io.siddhi.extension.io.grpc.util.GRPCStubHolder;
-import io.siddhi.extension.io.grpc.util.GrpcBlockingStub;
 import io.siddhi.extension.io.grpc.util.GRPCService.Request;
 import io.siddhi.extension.io.grpc.util.GRPCService.EmptyResponse;
-import io.siddhi.extension.io.grpc.util.Message;
 import io.siddhi.query.api.definition.StreamDefinition;
 import org.apache.log4j.Logger;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
-import java.nio.ByteBuffer;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * This is a sample class-level comment, explaining what the extension class does.
@@ -77,7 +73,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class GRPCSink extends Sink {
     private static final Logger logger = Logger.getLogger(GRPCSink.class.getName());
-    private GrpcBlockingStub blockingStub;
+//    private GrpcBlockingStub blockingStub;
 //    private InvokeSequenceStub asyncStub;
     private SiddhiAppContext siddhiAppContext;
     private Random random = new Random();
@@ -131,8 +127,8 @@ public class GRPCSink extends Sink {
                 .usePlaintext(true)
                 .build();
 
-        blockingStub = new GrpcBlockingStub(channel);
-        GRPCStubHolder.getInstance().setBlockingStub(blockingStub);
+//        blockingStub = new GrpcBlockingStub(channel);
+//        GRPCStubHolder.getInstance().setBlockingStub(blockingStub);
 
         return null;
     }
@@ -217,11 +213,11 @@ public class GRPCSink extends Sink {
 
     @Override
     public void shutdown() {
-        try {
-            channel.shutdown().awaitTermination(5, TimeUnit.SECONDS);
-        } catch (InterruptedException e) {
-            throw new SiddhiAppRuntimeException(siddhiAppContext.getName() + ": " + e.getMessage());
-        }
+//        try {
+//            channel.shutdown().awaitTermination(5, TimeUnit.SECONDS);
+//        } catch (InterruptedException e) {
+//            throw new SiddhiAppRuntimeException(siddhiAppContext.getName() + ": " + e.getMessage());
+//        }
         super.shutdown();
     }
 }

@@ -163,15 +163,15 @@ public class GRPCSink extends Sink {
 
     public static MethodDescriptor<Request, EmptyResponse> CREATE_METHOD =
             MethodDescriptor.newBuilder(
-                    marshallerFor(Request.class),
-                    marshallerFor(EmptyResponse.class))
+                    marshallerForReq(Request.class),
+                    marshallerForResp(EmptyResponse.class))
                     .setFullMethodName(
                             MethodDescriptor.generateFullMethodName(serviceName, "Create"))
                     .setType(MethodDescriptor.MethodType.UNARY)
                     .setSampledToLocalTracing(true)
                     .build();
 
-    static <T> MethodDescriptor.Marshaller<T> marshallerFor(Class<T> clz) {
+    static <T> MethodDescriptor.Marshaller<T> marshallerForReq(Class<T> clz) {
         return new MethodDescriptor.Marshaller<T>() {
             @Override
             public InputStream stream(T value) {
@@ -185,6 +185,25 @@ public class GRPCSink extends Sink {
                 byte[] myvar = "Any String you want".getBytes();
                 Request request = new Request(myvar);
                 return (T) request; //gson.fromJson(new InputStreamReader(stream, StandardCharsets.UTF_8), clz);
+                //todo: find way to get byte[] from inputstream
+            }
+        };
+    }
+
+    static <T> MethodDescriptor.Marshaller<T> marshallerForResp(Class<T> clz) {
+        return new MethodDescriptor.Marshaller<T>() {
+            @Override
+            public InputStream stream(T value) {
+                return new ByteArrayInputStream(((EmptyResponse) value).getResponse());
+            }
+
+            @Override
+            public T parse(InputStream stream) {
+                System.out.println("received");
+//                stream.;
+                byte[] myvar = "Any String you want".getBytes();
+                EmptyResponse response = new EmptyResponse();
+                return (T) response; //gson.fromJson(new InputStreamReader(stream, StandardCharsets.UTF_8), clz);
                 //todo: find way to get byte[] from inputstream
             }
         };

@@ -24,8 +24,13 @@ public class GRPCService {
         }
     }
 
-    public class EmptyResponse{
-        byte[] response;
+    public static class EmptyResponse{
+        public byte[] getResponse() {
+            return response;
+        }
+
+        byte[] response = "Any String you want".getBytes();
+//        byte[] response;
     }
 
 //    static final MethodDescriptor<Request, EmptyResponse> CREATE_METHOD =

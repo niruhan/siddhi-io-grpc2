@@ -7,6 +7,7 @@ import io.grpc.stub.ServerCalls;
 import io.grpc.stub.StreamObserver;
 import io.siddhi.extension.io.grpc.sink.GRPCSink;
 import io.siddhi.extension.io.grpc.util.GRPCService;
+import io.siddhi.extension.io.grpc.util.GRPCService.EmptyResponse;
 
 public class TestService implements BindableService {
     private String SERVICE_NAME = "TestService";
@@ -20,6 +21,9 @@ public class TestService implements BindableService {
 
     public void create(GRPCService.Request request, StreamObserver<GRPCService.EmptyResponse> responseObserver) {
         System.out.println("server hit!");
+        EmptyResponse emptyResponse = new EmptyResponse();
+        responseObserver.onNext(emptyResponse);
+        responseObserver.onCompleted();
     }
 
 }

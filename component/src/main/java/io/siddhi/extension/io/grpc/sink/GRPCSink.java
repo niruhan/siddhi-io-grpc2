@@ -23,6 +23,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.MoreExecutors;
 import io.grpc.*;
 import io.grpc.stub.ClientCalls;
+import io.grpc.stub.StreamObserver;
 import io.siddhi.annotation.Example;
 import io.siddhi.annotation.Extension;
 import io.siddhi.core.config.SiddhiAppContext;
@@ -37,6 +38,10 @@ import io.siddhi.core.util.snapshot.state.StateFactory;
 import io.siddhi.core.util.transport.DynamicOptions;
 import io.siddhi.core.util.transport.OptionHolder;
 import io.siddhi.extension.io.grpc.util.GRPCStubHolder;
+import io.siddhi.extension.io.grpc.util.service.InvokeSequenceGrpc;
+import io.siddhi.extension.io.grpc.util.service.InvokeSequenceGrpc.InvokeSequenceFutureStub;
+import io.siddhi.extension.io.grpc.util.service.SequenceCallRequest;
+import io.siddhi.extension.io.grpc.util.service.SequenceCallResponse;
 import io.siddhi.query.api.definition.StreamDefinition;
 import org.apache.log4j.Logger;
 
@@ -73,13 +78,14 @@ import java.util.concurrent.TimeUnit;
 
 public class GRPCSink extends Sink {
     private static final Logger logger = Logger.getLogger(GRPCSink.class.getName());
-//    private GrpcBlockingStub blockingStub;
-//    private InvokeSequenceStub asyncStub;
     private SiddhiAppContext siddhiAppContext;
     private Random random = new Random();
     private ManagedChannel channel;
-    private static String serviceName  = "TestService";
-//    private final Semaphore limiter = new Semaphore(100);
+    private static String serviceName;
+    private static String methodName;
+    private String sequenceName;
+    private InvokeSequenceFutureStub futureStub;
+    private boolean isMIConnect = false;
 
     /**
      * Returns the list of classes which this sink can consume.
@@ -122,26 +128,55 @@ public class GRPCSink extends Sink {
     protected StateFactory init(StreamDefinition streamDefinition, OptionHolder optionHolder, ConfigReader configReader,
                                 SiddhiAppContext siddhiAppContext) {
         this.siddhiAppContext = siddhiAppContext;
-//        this.serviceName = "TestService"; //todo: get from options holder
         String port = optionHolder.validateAndGetOption("port").getValue();
-
-        channel = ManagedChannelBuilder.forTarget("dns:///localhost:" + port)
+        String host = optionHolder.validateAndGetOption("host").getValue();
+        channel = ManagedChannelBuilder.forTarget(host + ":" + port)
                 .usePlaintext(true)
                 .build();
 
-//        blockingStub = new GrpcBlockingStub(channel);
-//        GRPCStubHolder.getInstance().setBlockingStub(blockingStub);
-
+        if (!optionHolder.isOptionExists("service")) {
+            isMIConnect = true;
+            serviceName = "InvokeSequence";
+            sequenceName = optionHolder.validateAndGetOption("sequence").getValue();
+            boolean isResponseExpected = optionHolder.validateAndGetOption("response").getValue().equalsIgnoreCase("True");
+            if (isResponseExpected) {
+                methodName = "CallSequenceWithResponse";
+            } else {
+                methodName = "CallSequenceWithoutResponse";
+            }
+            futureStub = InvokeSequenceGrpc.newFutureStub(channel);
+        } else {
+            serviceName = optionHolder.validateAndGetOption("service").getValue();
+            methodName = optionHolder.validateAndGetOption("method").getValue();
+        }
         return null;
     }
 
     @Override
     public void publish(Object payload, DynamicOptions dynamicOptions, State state) throws ConnectionUnavailableException {
+        String payload2 = "niru";
+        if (payload2 instanceof String) {
+            SequenceCallRequest.Builder requestBuilder = SequenceCallRequest.newBuilder();
+            requestBuilder.setPayloadAsJSON((String) payload2);
+            requestBuilder.setSequenceName(sequenceName);
+            SequenceCallRequest sequenceCallRequest = requestBuilder.build();
+            if (methodName.equalsIgnoreCase("CallSequenceWithResponse")) {
+                ListenableFuture<SequenceCallResponse> futureResponse = futureStub.callSequenceWithResponse(sequenceCallRequest); //todo: put in static holder
 
-        if (payload instanceof String) {
+                Futures.addCallback(futureResponse, new FutureCallback<SequenceCallResponse>() {
+                    @Override
+                    public void onSuccess(SequenceCallResponse result) {
+                        System.out.println("Success!");
+                    }
 
+                    @Override
+                    public void onFailure(Throwable t) {
+                        System.out.println("Failure");
+                        throw new SiddhiAppRuntimeException(t.getMessage());
+                    }
+                });
+            }
         }
-
     }
 
     /**

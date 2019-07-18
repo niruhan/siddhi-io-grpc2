@@ -15,7 +15,7 @@ private static final long serialVersionUID = 0L;
   private SequenceCallResponse(com.google.protobuf.GeneratedMessageV3.Builder<?> builder) {
     super(builder);
   }
-  private SequenceCallResponse() {
+  public SequenceCallResponse() {
     responseAsJSON_ = "";
   }
 

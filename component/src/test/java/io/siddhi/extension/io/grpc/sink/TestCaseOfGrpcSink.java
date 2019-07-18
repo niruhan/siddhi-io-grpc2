@@ -27,13 +27,14 @@ public class TestCaseOfGrpcSink {
             String port = String.valueOf(server.getPort());
             String inStreamDefinition = ""
                     + "@sink(type='grpc', " +
-                    "host = \'dns:///localhost\', " +
-                    "port = \'" + port + "\', " +
-                    "sequence = \'mySeq\', " +
-                    "response = \'true\') "
+                    "host = 'dns:///localhost', " +
+                    "port = '" + port + "', " +
+                    "sequence = 'mySeq', " +
+                    "response = 'true', " +
+                    "sink.id= '1') "
                     + "define stream FooStream (message String);";
 
-            String stream2 = "@source(type='grpc', sequence='mySeq', response='true') " +
+            String stream2 = "@source(type='grpc', sequence='mySeq', response='true', sink.id= '1') " +
                     "define stream BarStream (message String);";
             String query = "@info(name = 'query') "
                     + "from BarStream "
@@ -55,6 +56,7 @@ public class TestCaseOfGrpcSink {
                 siddhiAppRuntime.start();
 
                 fooStream.send(new Object[]{"niruhan"});
+                fooStream.send(new Object[]{"niruhan2"});
 
                 Thread.sleep(5000);
                 siddhiAppRuntime.shutdown();

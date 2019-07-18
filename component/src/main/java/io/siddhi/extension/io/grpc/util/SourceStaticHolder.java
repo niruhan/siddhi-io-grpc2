@@ -17,17 +17,13 @@
  */
 package io.siddhi.extension.io.grpc.util;
 
-import com.google.common.util.concurrent.ListenableFuture;
-import io.siddhi.core.stream.input.source.Source;
 import io.siddhi.extension.io.grpc.source.GRPCSource;
 
 import java.util.HashMap;
-import java.util.LinkedList;
 
 public class SourceStaticHolder {
     private static SourceStaticHolder instance = new SourceStaticHolder();
-//    HashMap<String, LinkedList<ListenableFuture>> listenableFutureQueueHolder = new HashMap<>();
-    HashMap<String, GRPCSource> sourceHashMap = new HashMap<>();
+    private HashMap<String, GRPCSource> sourceHashMap = new HashMap<>();
 
     private SourceStaticHolder() {
 
@@ -44,25 +40,5 @@ public class SourceStaticHolder {
     public GRPCSource getGRPCSource(String key) {
         return sourceHashMap.get(key);
     }
-
-//    public void putListenableFuture(String key, ListenableFuture listenableFuture) {
-//        if (listenableFutureQueueHolder.containsKey(key)) {
-//            listenableFutureQueueHolder.get(key).add(listenableFuture);
-//        } else {
-//            LinkedList<ListenableFuture> listenableFutureQueue = new LinkedList<ListenableFuture>();
-//            listenableFutureQueue.add(listenableFuture);
-//            listenableFutureQueueHolder.put(key, listenableFutureQueue);
-//        }
-//    }
-//
-//    public ListenableFuture getListenableFuture(String key) {
-//        if (listenableFutureQueueHolder.containsKey(key) && listenableFutureQueueHolder.get(key).size() != 0) {
-//            ListenableFuture listenableFuture = listenableFutureQueueHolder.get(key).getFirst();
-//            listenableFutureQueueHolder.get(key).removeFirst();
-//            return listenableFuture;
-//        } else {
-//            return null;
-//        }
-//    }
 
 }

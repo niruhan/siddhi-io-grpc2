@@ -17,11 +17,9 @@
  */
 package io.siddhi.extension.io.grpc.source;
 
-import com.google.common.util.concurrent.ListenableFuture;
 import io.siddhi.annotation.Example;
 import io.siddhi.annotation.Extension;
 import io.siddhi.core.config.SiddhiAppContext;
-import io.siddhi.core.event.Event;
 import io.siddhi.core.exception.ConnectionUnavailableException;
 import io.siddhi.core.stream.ServiceDeploymentInfo;
 import io.siddhi.core.stream.input.source.Source;
@@ -30,14 +28,9 @@ import io.siddhi.core.util.config.ConfigReader;
 import io.siddhi.core.util.snapshot.state.State;
 import io.siddhi.core.util.snapshot.state.StateFactory;
 import io.siddhi.core.util.transport.OptionHolder;
-import io.siddhi.extension.io.grpc.util.GRPCListenerThread;
 import io.siddhi.extension.io.grpc.util.SourceStaticHolder;
 import io.siddhi.extension.io.grpc.util.service.SequenceCallResponse;
 import org.apache.log4j.Logger;
-
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 /**
  * This is a sample class-level comment, explaining what the extension class does.
@@ -62,7 +55,6 @@ import java.util.concurrent.TimeUnit;
                 )
         }
 )
-// for more information refer https://siddhi-io.github.io/siddhi/documentation/siddhi-4.x/query-guide-4.x/#source
 public class GRPCSource extends Source {
     private static final Logger logger = Logger.getLogger(GRPCSource.class.getName());
     private SiddhiAppContext siddhiAppContext;
@@ -71,8 +63,6 @@ public class GRPCSource extends Source {
     private String sequenceName;
     private boolean isMIConnect = false;
     private SourceStaticHolder sourceStaticHolder = SourceStaticHolder.getInstance();
-    private ListenableFuture listenableFuture;
-    protected ExecutorService executorService;
     private String sinkID;
     private SourceEventListener sourceEventListener;
 
@@ -113,16 +103,11 @@ public class GRPCSource extends Source {
             serviceName = optionHolder.validateAndGetOption("service").getValue();
             methodName = optionHolder.validateAndGetOption("method").getValue();
         }
-        this.executorService = Executors.newFixedThreadPool(5);
-        siddhiAppContext.getScheduledExecutorService().scheduleAtFixedRate(new GRPCListenerThread(sourceEventListener), 0, 10, TimeUnit.MILLISECONDS);
-//        executorService.execute(new GRPCListenerThread(sourceEventListener));
-//        this.listenableFuture = sourceStaticHolder.getListenableFuture("InvokeSequence:CallSequenceWithResponse:mySeq");
-
         return null;
     }
 
     public void onResponse(SequenceCallResponse response) {
-        sourceEventListener.onEvent(new Object[]{response}, new String[]{"1"});
+        sourceEventListener.onEvent(new Object[]{response.getResponseAsJSON()}, new String[]{"1"});
     }
 
     /**

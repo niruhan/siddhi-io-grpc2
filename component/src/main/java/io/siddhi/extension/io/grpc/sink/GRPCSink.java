@@ -156,10 +156,8 @@ public class GRPCSink extends Sink {
                 Futures.addCallback(futureResponse, new FutureCallback<SequenceCallResponse>() {
                     @Override
                     public void onSuccess(SequenceCallResponse result) {
-                        String response = result.getResponseAsJSON();
-                        sourceStaticHolder.getGRPCSource(sinkID).;
-//                        sourceEventListener.onEvent(new Object[]{response}, new String[]{"1"});
-                        System.out.println("Success! from source");
+                        sourceStaticHolder.getGRPCSource(sinkID).onResponse(result);
+                        System.out.println("Success!");
                     }
 
                     @Override
@@ -168,7 +166,6 @@ public class GRPCSink extends Sink {
                         throw new SiddhiAppRuntimeException(t.getMessage());
                     }
                 });
-//                sourceStaticHolder.putListenableFuture(serviceName + ":" + methodName + ":" + sequenceName, futureResponse);
             }
         }
     }

@@ -20,9 +20,7 @@ package io.siddhi.extension.io.grpc.sink;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.MoreExecutors;
 import io.grpc.*;
-import io.grpc.stub.ClientCalls;
 import io.siddhi.annotation.Example;
 import io.siddhi.annotation.Extension;
 import io.siddhi.core.config.SiddhiAppContext;
@@ -36,16 +34,14 @@ import io.siddhi.core.util.snapshot.state.State;
 import io.siddhi.core.util.snapshot.state.StateFactory;
 import io.siddhi.core.util.transport.DynamicOptions;
 import io.siddhi.core.util.transport.OptionHolder;
-import io.siddhi.extension.io.grpc.util.GRPCStubHolder;
-import io.siddhi.extension.io.grpc.util.GRPCService.Request;
-import io.siddhi.extension.io.grpc.util.GRPCService.EmptyResponse;
+import io.siddhi.extension.io.grpc.util.SourceStaticHolder;
+import io.siddhi.extension.io.grpc.util.service.InvokeSequenceGrpc;
+import io.siddhi.extension.io.grpc.util.service.InvokeSequenceGrpc.InvokeSequenceFutureStub;
+import io.siddhi.extension.io.grpc.util.service.SequenceCallRequest;
+import io.siddhi.extension.io.grpc.util.service.SequenceCallResponse;
 import io.siddhi.query.api.definition.StreamDefinition;
 import org.apache.log4j.Logger;
 
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
-import java.util.Random;
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -71,17 +67,17 @@ import java.util.concurrent.TimeUnit;
         }
 )
 
-// for more information refer https://siddhi-io.github.io/siddhi/documentation/siddhi-4.x/query-guide-4.x/#sink
-
 public class GRPCSink extends Sink {
     private static final Logger logger = Logger.getLogger(GRPCSink.class.getName());
-//    private GrpcBlockingStub blockingStub;
-//    private InvokeSequenceStub asyncStub;
     private SiddhiAppContext siddhiAppContext;
-    private Random random = new Random();
     private ManagedChannel channel;
-    private static String serviceName  = "TestService";
-//    private final Semaphore limiter = new Semaphore(100);
+    private static String serviceName;
+    private static String methodName;
+    private String sequenceName;
+    private InvokeSequenceFutureStub futureStub;
+    private boolean isMIConnect = false;
+    private SourceStaticHolder sourceStaticHolder = SourceStaticHolder.getInstance();
+    private String sinkID;
 
     /**
      * Returns the list of classes which this sink can consume.
@@ -124,93 +120,56 @@ public class GRPCSink extends Sink {
     protected StateFactory init(StreamDefinition streamDefinition, OptionHolder optionHolder, ConfigReader configReader,
                                 SiddhiAppContext siddhiAppContext) {
         this.siddhiAppContext = siddhiAppContext;
-//        this.serviceName = "TestService"; //todo: get from options holder
         String port = optionHolder.validateAndGetOption("port").getValue();
-
-        channel = ManagedChannelBuilder.forTarget("dns:///localhost:" + port)
+        String host = optionHolder.validateAndGetOption("host").getValue();
+        sinkID = optionHolder.validateAndGetOption("sink.id").getValue();
+        channel = ManagedChannelBuilder.forTarget(host + ":" + port)
                 .usePlaintext(true)
                 .build();
 
-//        blockingStub = new GrpcBlockingStub(channel);
-//        GRPCStubHolder.getInstance().setBlockingStub(blockingStub);
-
+        if (!optionHolder.isOptionExists("service")) {
+            isMIConnect = true;
+            serviceName = "InvokeSequence";
+            sequenceName = optionHolder.validateAndGetOption("sequence").getValue();
+            boolean isResponseExpected = optionHolder.validateAndGetOption("response").getValue().equalsIgnoreCase("True");
+            if (isResponseExpected) {
+                methodName = "CallSequenceWithResponse";
+            } else {
+                methodName = "CallSequenceWithoutResponse";
+            }
+            futureStub = InvokeSequenceGrpc.newFutureStub(channel);
+        } else {
+            serviceName = optionHolder.validateAndGetOption("service").getValue();
+            methodName = optionHolder.validateAndGetOption("method").getValue();
+        }
         return null;
     }
 
     @Override
     public void publish(Object payload, DynamicOptions dynamicOptions, State state) throws ConnectionUnavailableException {
+        String payload2 = "niru";
+        if (isMIConnect) {
+            SequenceCallRequest.Builder requestBuilder = SequenceCallRequest.newBuilder();
+            requestBuilder.setPayloadAsJSON((String) payload2);
+            requestBuilder.setSequenceName(sequenceName);
+            SequenceCallRequest sequenceCallRequest = requestBuilder.build();
+            if (methodName.equalsIgnoreCase("CallSequenceWithResponse")) {
+                ListenableFuture<SequenceCallResponse> futureResponse = futureStub.callSequenceWithResponse(sequenceCallRequest);
+                Futures.addCallback(futureResponse, new FutureCallback<SequenceCallResponse>() {
+                    @Override
+                    public void onSuccess(SequenceCallResponse result) {
+                        sourceStaticHolder.getGRPCSource(sinkID).onResponse(result);
+                        System.out.println("Success!");
+                    }
 
-        ClientCall<Request, EmptyResponse> call = channel.newCall(CREATE_METHOD, CallOptions.DEFAULT);
-        byte[] myvar = "Any String you want".getBytes();
-        Request request = new Request(myvar);
-
-        ListenableFuture<EmptyResponse> res = ClientCalls.futureUnaryCall(call, request);
-//        res.addListener(, MoreExecutors.directExecutor());
-
-        Futures.addCallback(res, new FutureCallback<EmptyResponse>() {
-            @Override
-            public void onSuccess(EmptyResponse result) {
-                System.out.println("Success!");
+                    @Override
+                    public void onFailure(Throwable t) {
+                        System.out.println("Failure");
+                        throw new SiddhiAppRuntimeException(t.getMessage());
+                    }
+                });
             }
-
-            @Override
-            public void onFailure(Throwable t) {
-                System.out.println("Failure");
-                throw new SiddhiAppRuntimeException(t.getMessage());
-            }
-        });
-    }
-
-    public static MethodDescriptor<Request, EmptyResponse> CREATE_METHOD =
-            MethodDescriptor.newBuilder(
-                    marshallerForReq(Request.class),
-                    marshallerForResp(EmptyResponse.class))
-                    .setFullMethodName(
-                            MethodDescriptor.generateFullMethodName(serviceName, "Create"))
-                    .setType(MethodDescriptor.MethodType.UNARY)
-                    .setSampledToLocalTracing(true)
-                    .build();
-
-    static <T> MethodDescriptor.Marshaller<T> marshallerForReq(Class<T> clz) {
-        return new MethodDescriptor.Marshaller<T>() {
-            @Override
-            public InputStream stream(T value) {
-                return new ByteArrayInputStream(((Request) value).getValue());
-            }
-
-            @Override
-            public T parse(InputStream stream) {
-                System.out.println("received");
-//                stream.;
-                byte[] myvar = "Any String you want".getBytes();
-                Request request = new Request(myvar);
-                return (T) request; //gson.fromJson(new InputStreamReader(stream, StandardCharsets.UTF_8), clz);
-                //todo: find way to get byte[] from inputstream
-            }
-        };
-    }
-
-    static <T> MethodDescriptor.Marshaller<T> marshallerForResp(Class<T> clz) {
-        return new MethodDescriptor.Marshaller<T>() {
-            @Override
-            public InputStream stream(T value) {
-                return new ByteArrayInputStream(((EmptyResponse) value).getResponse());
-            }
-
-            @Override
-            public T parse(InputStream stream) {
-                System.out.println("received");
-//                stream.;
-                byte[] myvar = "Any String you want".getBytes();
-                EmptyResponse response = new EmptyResponse();
-                return (T) response; //gson.fromJson(new InputStreamReader(stream, StandardCharsets.UTF_8), clz);
-                //todo: find way to get byte[] from inputstream
-            }
-        };
-    }
-
-    private String generateJSONStringFromObjectPayload(Object payload) {
-        return null; //todo: implement function
+        }
     }
 
     /**
@@ -244,11 +203,11 @@ public class GRPCSink extends Sink {
 
     @Override
     public void shutdown() {
-//        try {
-//            channel.shutdown().awaitTermination(5, TimeUnit.SECONDS);
-//        } catch (InterruptedException e) {
-//            throw new SiddhiAppRuntimeException(siddhiAppContext.getName() + ": " + e.getMessage());
-//        }
+        try {
+            channel.shutdown().awaitTermination(5, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            throw new SiddhiAppRuntimeException(siddhiAppContext.getName() + ": " + e.getMessage());
+        }
         super.shutdown();
     }
 }

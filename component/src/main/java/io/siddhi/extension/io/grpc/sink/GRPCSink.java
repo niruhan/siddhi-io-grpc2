@@ -20,10 +20,7 @@ package io.siddhi.extension.io.grpc.sink;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.MoreExecutors;
 import io.grpc.*;
-import io.grpc.stub.ClientCalls;
-import io.grpc.stub.StreamObserver;
 import io.siddhi.annotation.Example;
 import io.siddhi.annotation.Extension;
 import io.siddhi.core.config.SiddhiAppContext;
@@ -37,19 +34,13 @@ import io.siddhi.core.util.snapshot.state.State;
 import io.siddhi.core.util.snapshot.state.StateFactory;
 import io.siddhi.core.util.transport.DynamicOptions;
 import io.siddhi.core.util.transport.OptionHolder;
-import io.siddhi.extension.io.grpc.util.GRPCStubHolder;
+import io.siddhi.extension.io.grpc.util.ResponseStaticHolder;
 import io.siddhi.extension.io.grpc.util.service.InvokeSequenceGrpc;
 import io.siddhi.extension.io.grpc.util.service.InvokeSequenceGrpc.InvokeSequenceFutureStub;
 import io.siddhi.extension.io.grpc.util.service.SequenceCallRequest;
 import io.siddhi.extension.io.grpc.util.service.SequenceCallResponse;
 import io.siddhi.query.api.definition.StreamDefinition;
 import org.apache.log4j.Logger;
-
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
-import java.util.Random;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
 
 /**
  * This is a sample class-level comment, explaining what the extension class does.
@@ -74,18 +65,16 @@ import java.util.concurrent.TimeUnit;
         }
 )
 
-// for more information refer https://siddhi-io.github.io/siddhi/documentation/siddhi-4.x/query-guide-4.x/#sink
-
 public class GRPCSink extends Sink {
     private static final Logger logger = Logger.getLogger(GRPCSink.class.getName());
     private SiddhiAppContext siddhiAppContext;
-    private Random random = new Random();
     private ManagedChannel channel;
     private static String serviceName;
     private static String methodName;
     private String sequenceName;
     private InvokeSequenceFutureStub futureStub;
     private boolean isMIConnect = false;
+    private ResponseStaticHolder responseStaticHolder = ResponseStaticHolder.getInstance();
 
     /**
      * Returns the list of classes which this sink can consume.
@@ -155,26 +144,27 @@ public class GRPCSink extends Sink {
     @Override
     public void publish(Object payload, DynamicOptions dynamicOptions, State state) throws ConnectionUnavailableException {
         String payload2 = "niru";
-        if (payload2 instanceof String) {
+        if (isMIConnect) {
             SequenceCallRequest.Builder requestBuilder = SequenceCallRequest.newBuilder();
             requestBuilder.setPayloadAsJSON((String) payload2);
             requestBuilder.setSequenceName(sequenceName);
             SequenceCallRequest sequenceCallRequest = requestBuilder.build();
             if (methodName.equalsIgnoreCase("CallSequenceWithResponse")) {
                 ListenableFuture<SequenceCallResponse> futureResponse = futureStub.callSequenceWithResponse(sequenceCallRequest); //todo: put in static holder
+                responseStaticHolder.putListenableFuture(serviceName + ":" + methodName + ":" + sequenceName, futureResponse);
 
-                Futures.addCallback(futureResponse, new FutureCallback<SequenceCallResponse>() {
-                    @Override
-                    public void onSuccess(SequenceCallResponse result) {
-                        System.out.println("Success!");
-                    }
-
-                    @Override
-                    public void onFailure(Throwable t) {
-                        System.out.println("Failure");
-                        throw new SiddhiAppRuntimeException(t.getMessage());
-                    }
-                });
+//                Futures.addCallback(futureResponse, new FutureCallback<SequenceCallResponse>() {
+//                    @Override
+//                    public void onSuccess(SequenceCallResponse result) {
+//                        System.out.println("Success!");
+//                    }
+//
+//                    @Override
+//                    public void onFailure(Throwable t) {
+//                        System.out.println("Failure");
+//                        throw new SiddhiAppRuntimeException(t.getMessage());
+//                    }
+//                });
             }
         }
     }

@@ -17,13 +17,30 @@
  */
 package io.siddhi.extension.io.grpc.util;
 
-public class GRPCStubHolder {
-    private static GRPCStubHolder instance = new GRPCStubHolder();
+import com.google.common.util.concurrent.ListenableFuture;
 
-    private GRPCStubHolder() {
+import java.util.HashMap;
+
+public class ResponseStaticHolder {
+    private static ResponseStaticHolder instance = new ResponseStaticHolder();
+    HashMap<String, ListenableFuture> listenableFutureHolder = new HashMap<>();
+
+    private ResponseStaticHolder() {
     }
 
-    public static GRPCStubHolder getInstance() {
+    public static ResponseStaticHolder getInstance() {
         return instance;
+    }
+
+    public void putListenableFuture(String key, ListenableFuture listenableFuture) {
+        listenableFutureHolder.put(key, listenableFuture);
+    }
+
+    public ListenableFuture getListenableFuture(String key) {
+        return listenableFutureHolder.get(key);
+    }
+
+    public void removeListenableFuture(String key) {
+        listenableFutureHolder.remove(key);
     }
 }

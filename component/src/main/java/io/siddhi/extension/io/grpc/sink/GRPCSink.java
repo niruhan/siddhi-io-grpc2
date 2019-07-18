@@ -42,6 +42,8 @@ import io.siddhi.extension.io.grpc.util.service.SequenceCallResponse;
 import io.siddhi.query.api.definition.StreamDefinition;
 import org.apache.log4j.Logger;
 
+import java.util.concurrent.TimeUnit;
+
 /**
  * This is a sample class-level comment, explaining what the extension class does.
  */
@@ -201,11 +203,11 @@ public class GRPCSink extends Sink {
 
     @Override
     public void shutdown() {
-//        try {
-//            channel.shutdown().awaitTermination(5, TimeUnit.SECONDS);
-//        } catch (InterruptedException e) {
-//            throw new SiddhiAppRuntimeException(siddhiAppContext.getName() + ": " + e.getMessage());
-//        }
+        try {
+            channel.shutdown().awaitTermination(5, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            throw new SiddhiAppRuntimeException(siddhiAppContext.getName() + ": " + e.getMessage());
+        }
         super.shutdown();
     }
 }

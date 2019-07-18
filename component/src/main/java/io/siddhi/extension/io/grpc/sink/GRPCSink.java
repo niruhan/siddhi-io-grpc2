@@ -17,11 +17,16 @@
  */
 package io.siddhi.extension.io.grpc.sink;
 
-import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.MoreExecutors;
+import io.grpc.*;
+import io.grpc.stub.ClientCalls;
 import io.siddhi.annotation.Example;
 import io.siddhi.annotation.Extension;
 import io.siddhi.core.config.SiddhiAppContext;
+import io.siddhi.core.event.Event;
 import io.siddhi.core.exception.ConnectionUnavailableException;
 import io.siddhi.core.exception.SiddhiAppRuntimeException;
 import io.siddhi.core.stream.ServiceDeploymentInfo;
@@ -31,16 +36,14 @@ import io.siddhi.core.util.snapshot.state.State;
 import io.siddhi.core.util.snapshot.state.StateFactory;
 import io.siddhi.core.util.transport.DynamicOptions;
 import io.siddhi.core.util.transport.OptionHolder;
-import io.siddhi.extension.io.grpc.InvokeSequenceGrpc;
-import io.siddhi.extension.io.grpc.InvokeSequenceGrpc.InvokeSequenceBlockingStub;
-import io.siddhi.extension.io.grpc.InvokeSequenceGrpc.InvokeSequenceStub;
-import io.siddhi.extension.io.grpc.SequenceCallRequest;
-import io.siddhi.extension.io.grpc.SequenceCallResponse;
 import io.siddhi.extension.io.grpc.util.GRPCStubHolder;
 import io.siddhi.query.api.definition.StreamDefinition;
 import org.apache.log4j.Logger;
 
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.util.Random;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -70,12 +73,13 @@ import java.util.concurrent.TimeUnit;
 
 public class GRPCSink extends Sink {
     private static final Logger logger = Logger.getLogger(GRPCSink.class.getName());
-
-    private ManagedChannel channel; //todo: make final
-    private InvokeSequenceBlockingStub blockingStub;
-    private InvokeSequenceStub asyncStub;
+//    private GrpcBlockingStub blockingStub;
+//    private InvokeSequenceStub asyncStub;
     private SiddhiAppContext siddhiAppContext;
     private Random random = new Random();
+    private ManagedChannel channel;
+    private static String serviceName  = "TestService";
+//    private final Semaphore limiter = new Semaphore(100);
 
     /**
      * Returns the list of classes which this sink can consume.
@@ -86,7 +90,7 @@ public class GRPCSink extends Sink {
      */
     @Override
     public Class[] getSupportedInputEventClasses() {
-            return new Class[0];
+            return new Class[]{Event.class};
     }
 
     @Override
@@ -118,33 +122,26 @@ public class GRPCSink extends Sink {
     protected StateFactory init(StreamDefinition streamDefinition, OptionHolder optionHolder, ConfigReader configReader,
                                 SiddhiAppContext siddhiAppContext) {
         this.siddhiAppContext = siddhiAppContext;
-        String host = ""; //todo: get from somewhere
-        int port = 0;
-        channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext().build();
-        blockingStub = InvokeSequenceGrpc.newBlockingStub(channel);
-        asyncStub = InvokeSequenceGrpc.newStub(channel);
-        GRPCStubHolder.getInstance().setBlockingStub(blockingStub);
-        GRPCStubHolder.getInstance().setAsyncStub(asyncStub);
+//        this.serviceName = "TestService"; //todo: get from options holder
+        String port = optionHolder.validateAndGetOption("port").getValue();
+
+        channel = ManagedChannelBuilder.forTarget("dns:///localhost:" + port)
+                .usePlaintext(true)
+                .build();
+
+//        blockingStub = new GrpcBlockingStub(channel);
+//        GRPCStubHolder.getInstance().setBlockingStub(blockingStub);
+
         return null;
     }
 
     @Override
     public void publish(Object payload, DynamicOptions dynamicOptions, State state) throws ConnectionUnavailableException {
-        String payloadAsJSON = generateJSONStringFromObjectPayload(payload);
-        String sequenceName = "";
-        SequenceCallRequest.Builder requestBuilder = SequenceCallRequest.newBuilder();
-//        Map<String, String> synapseConfigs = requestBuilder.getSynapseConfigsMap();
-        requestBuilder.putSynapseConfigs("", "");
-        requestBuilder.setPayloadAsJSON(payloadAsJSON);
-        requestBuilder.setSequenceName(sequenceName);
-        SequenceCallRequest sequenceCallRequest = requestBuilder.build();
 
-        SequenceCallResponse response = blockingStub.callSequenceWithResponse(sequenceCallRequest); //todo: have to pass this request smhow to grpc source
+        if (payload instanceof String) {
 
-    }
+        }
 
-    private String generateJSONStringFromObjectPayload(Object payload) {
-        return null; //todo: implement function
     }
 
     /**
@@ -178,11 +175,11 @@ public class GRPCSink extends Sink {
 
     @Override
     public void shutdown() {
-        try {
-            channel.shutdown().awaitTermination(5, TimeUnit.SECONDS);
-        } catch (InterruptedException e) {
-            throw new SiddhiAppRuntimeException(siddhiAppContext.getName() + ": " + e.getMessage());
-        }
+//        try {
+//            channel.shutdown().awaitTermination(5, TimeUnit.SECONDS);
+//        } catch (InterruptedException e) {
+//            throw new SiddhiAppRuntimeException(siddhiAppContext.getName() + ": " + e.getMessage());
+//        }
         super.shutdown();
     }
 }

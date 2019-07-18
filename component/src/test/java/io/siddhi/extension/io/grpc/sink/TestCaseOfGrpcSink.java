@@ -71,7 +71,9 @@ public class TestCaseOfGrpcSink {
             @Override
             public void callSequenceWithResponse(SequenceCallRequest request, StreamObserver<SequenceCallResponse> responseObserver) {
                 System.out.println("Server hit");
-                SequenceCallResponse response = new SequenceCallResponse();
+                SequenceCallResponse.Builder responseBuilder = SequenceCallResponse.newBuilder();
+                responseBuilder.setResponseAsJSON("server data");
+                SequenceCallResponse response = responseBuilder.build();
                 responseObserver.onNext(response);
                 responseObserver.onCompleted();
             }

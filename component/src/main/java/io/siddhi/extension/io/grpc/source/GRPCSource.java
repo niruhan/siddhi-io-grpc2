@@ -17,14 +17,12 @@
  */
 package io.siddhi.extension.io.grpc.source;
 
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import io.siddhi.annotation.Example;
 import io.siddhi.annotation.Extension;
 import io.siddhi.core.config.SiddhiAppContext;
+import io.siddhi.core.event.Event;
 import io.siddhi.core.exception.ConnectionUnavailableException;
-import io.siddhi.core.exception.SiddhiAppRuntimeException;
 import io.siddhi.core.stream.ServiceDeploymentInfo;
 import io.siddhi.core.stream.input.source.Source;
 import io.siddhi.core.stream.input.source.SourceEventListener;
@@ -33,7 +31,7 @@ import io.siddhi.core.util.snapshot.state.State;
 import io.siddhi.core.util.snapshot.state.StateFactory;
 import io.siddhi.core.util.transport.OptionHolder;
 import io.siddhi.extension.io.grpc.util.GRPCListenerThread;
-import io.siddhi.extension.io.grpc.util.ResponseStaticHolder;
+import io.siddhi.extension.io.grpc.util.SourceStaticHolder;
 import io.siddhi.extension.io.grpc.util.service.SequenceCallResponse;
 import org.apache.log4j.Logger;
 
@@ -72,9 +70,11 @@ public class GRPCSource extends Source {
     private static String methodName;
     private String sequenceName;
     private boolean isMIConnect = false;
-    private ResponseStaticHolder responseStaticHolder = ResponseStaticHolder.getInstance();
+    private SourceStaticHolder sourceStaticHolder = SourceStaticHolder.getInstance();
     private ListenableFuture listenableFuture;
     protected ExecutorService executorService;
+    private String sinkID;
+    private SourceEventListener sourceEventListener;
 
     @Override
     protected ServiceDeploymentInfo exposeServiceDeploymentInfo() {
@@ -95,6 +95,9 @@ public class GRPCSource extends Source {
                              String[] requestedTransportPropertyNames, ConfigReader configReader,
                              SiddhiAppContext siddhiAppContext) {
         this.siddhiAppContext = siddhiAppContext;
+        this.sourceEventListener = sourceEventListener;
+        sinkID = optionHolder.validateAndGetOption("sink.id").getValue();
+        sourceStaticHolder.putSource(sinkID, this);
 
         if (!optionHolder.isOptionExists("service")) {
             isMIConnect = true;
@@ -113,9 +116,13 @@ public class GRPCSource extends Source {
         this.executorService = Executors.newFixedThreadPool(5);
         siddhiAppContext.getScheduledExecutorService().scheduleAtFixedRate(new GRPCListenerThread(sourceEventListener), 0, 10, TimeUnit.MILLISECONDS);
 //        executorService.execute(new GRPCListenerThread(sourceEventListener));
-//        this.listenableFuture = responseStaticHolder.getListenableFuture("InvokeSequence:CallSequenceWithResponse:mySeq");
+//        this.listenableFuture = sourceStaticHolder.getListenableFuture("InvokeSequence:CallSequenceWithResponse:mySeq");
 
         return null;
+    }
+
+    public void onResponse(SequenceCallResponse response) {
+        sourceEventListener.onEvent(new Object[]{response}, new String[]{"1"});
     }
 
     /**

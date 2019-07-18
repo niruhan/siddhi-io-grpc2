@@ -9,7 +9,7 @@ import io.siddhi.extension.io.grpc.util.service.SequenceCallResponse;
 
 public class GRPCListenerThread implements Runnable {
     private SourceEventListener sourceEventListener;
-    private ResponseStaticHolder responseStaticHolder = ResponseStaticHolder.getInstance();
+    private SourceStaticHolder sourceStaticHolder = SourceStaticHolder.getInstance();
 
     public GRPCListenerThread(SourceEventListener sourceEventListener) {
         this.sourceEventListener = sourceEventListener;
@@ -17,7 +17,7 @@ public class GRPCListenerThread implements Runnable {
 
     @Override
     public void run() {
-        ListenableFuture listenableFuture = responseStaticHolder.getListenableFuture("InvokeSequence:CallSequenceWithResponse:mySeq");
+        ListenableFuture listenableFuture = sourceStaticHolder.getListenableFuture("InvokeSequence:CallSequenceWithResponse:mySeq");
         if (listenableFuture != null) {
             Futures.addCallback(listenableFuture, new FutureCallback<SequenceCallResponse>() {
                 @Override
@@ -33,7 +33,7 @@ public class GRPCListenerThread implements Runnable {
                     throw new SiddhiAppRuntimeException(t.getMessage());
                 }
             });
-            responseStaticHolder.removeListenableFuture("InvokeSequence:CallSequenceWithResponse:mySeq");
+//            sourceStaticHolder.removeListenableFuture("InvokeSequence:CallSequenceWithResponse:mySeq");
         }
     }
 }

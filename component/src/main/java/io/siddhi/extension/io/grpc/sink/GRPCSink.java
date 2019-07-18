@@ -34,7 +34,7 @@ import io.siddhi.core.util.snapshot.state.State;
 import io.siddhi.core.util.snapshot.state.StateFactory;
 import io.siddhi.core.util.transport.DynamicOptions;
 import io.siddhi.core.util.transport.OptionHolder;
-import io.siddhi.extension.io.grpc.util.ResponseStaticHolder;
+import io.siddhi.extension.io.grpc.util.SourceStaticHolder;
 import io.siddhi.extension.io.grpc.util.service.InvokeSequenceGrpc;
 import io.siddhi.extension.io.grpc.util.service.InvokeSequenceGrpc.InvokeSequenceFutureStub;
 import io.siddhi.extension.io.grpc.util.service.SequenceCallRequest;
@@ -74,7 +74,8 @@ public class GRPCSink extends Sink {
     private String sequenceName;
     private InvokeSequenceFutureStub futureStub;
     private boolean isMIConnect = false;
-    private ResponseStaticHolder responseStaticHolder = ResponseStaticHolder.getInstance();
+    private SourceStaticHolder sourceStaticHolder = SourceStaticHolder.getInstance();
+    private String sinkID;
 
     /**
      * Returns the list of classes which this sink can consume.
@@ -119,6 +120,7 @@ public class GRPCSink extends Sink {
         this.siddhiAppContext = siddhiAppContext;
         String port = optionHolder.validateAndGetOption("port").getValue();
         String host = optionHolder.validateAndGetOption("host").getValue();
+        sinkID = optionHolder.validateAndGetOption("sink.id").getValue();
         channel = ManagedChannelBuilder.forTarget(host + ":" + port)
                 .usePlaintext(true)
                 .build();
@@ -150,21 +152,23 @@ public class GRPCSink extends Sink {
             requestBuilder.setSequenceName(sequenceName);
             SequenceCallRequest sequenceCallRequest = requestBuilder.build();
             if (methodName.equalsIgnoreCase("CallSequenceWithResponse")) {
-                ListenableFuture<SequenceCallResponse> futureResponse = futureStub.callSequenceWithResponse(sequenceCallRequest); //todo: put in static holder
-                responseStaticHolder.putListenableFuture(serviceName + ":" + methodName + ":" + sequenceName, futureResponse);
+                ListenableFuture<SequenceCallResponse> futureResponse = futureStub.callSequenceWithResponse(sequenceCallRequest);
+                Futures.addCallback(futureResponse, new FutureCallback<SequenceCallResponse>() {
+                    @Override
+                    public void onSuccess(SequenceCallResponse result) {
+                        String response = result.getResponseAsJSON();
+                        sourceStaticHolder.getGRPCSource(sinkID).;
+//                        sourceEventListener.onEvent(new Object[]{response}, new String[]{"1"});
+                        System.out.println("Success! from source");
+                    }
 
-//                Futures.addCallback(futureResponse, new FutureCallback<SequenceCallResponse>() {
-//                    @Override
-//                    public void onSuccess(SequenceCallResponse result) {
-//                        System.out.println("Success!");
-//                    }
-//
-//                    @Override
-//                    public void onFailure(Throwable t) {
-//                        System.out.println("Failure");
-//                        throw new SiddhiAppRuntimeException(t.getMessage());
-//                    }
-//                });
+                    @Override
+                    public void onFailure(Throwable t) {
+                        System.out.println("Failure");
+                        throw new SiddhiAppRuntimeException(t.getMessage());
+                    }
+                });
+//                sourceStaticHolder.putListenableFuture(serviceName + ":" + methodName + ":" + sequenceName, futureResponse);
             }
         }
     }

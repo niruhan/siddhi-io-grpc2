@@ -56,7 +56,6 @@ public class TestCaseOfGrpcSink {
                 siddhiAppRuntime.start();
 
                 fooStream.send(new Object[]{"niruhan"});
-                fooStream.send(new Object[]{"niruhan2"});
 
                 Thread.sleep(5000);
                 siddhiAppRuntime.shutdown();
@@ -64,6 +63,52 @@ public class TestCaseOfGrpcSink {
                 stopServer();
             }
         }
+
+    @Test
+    public void test2() throws Exception {
+        SiddhiManager siddhiManager = new SiddhiManager();
+
+        startServer();
+        String port = String.valueOf(server.getPort());
+        String inStreamDefinition = ""
+                + "@sink(type='grpc', " +
+                "host = 'dns:///localhost', " +
+                "port = '" + port + "', " +
+                "sequence = 'mySeq', " +
+                "response = 'true', " +
+                "sink.id= '1') "
+                + "define stream FooStream (message String);";
+
+        String stream2 = "@source(type='grpc', sequence='mySeq', response='true', sink.id= '1') " +
+                "define stream BarStream (message String);";
+        String query = "@info(name = 'query') "
+                + "from BarStream "
+                + "select *  "
+                + "insert into outputStream;";
+
+        SiddhiAppRuntime siddhiAppRuntime = siddhiManager.createSiddhiAppRuntime(inStreamDefinition + stream2 + query);
+        siddhiAppRuntime.addCallback("query", new QueryCallback() {
+            @Override
+            public void receive(long timeStamp, Event[] inEvents, Event[] removeEvents) {
+                EventPrinter.print(timeStamp, inEvents, removeEvents);
+            }
+        });
+        InputHandler fooStream = siddhiAppRuntime.getInputHandler("FooStream");
+
+
+        System.out.println(server.getPort());
+        try {
+            siddhiAppRuntime.start();
+
+            fooStream.send(new Object[]{"niruhan"});
+            fooStream.send(new Object[]{"niruhan2"});
+
+            Thread.sleep(5000);
+            siddhiAppRuntime.shutdown();
+        } finally {
+            stopServer();
+        }
+    }
 
     private void startServer() throws IOException {
         if (server != null) {
